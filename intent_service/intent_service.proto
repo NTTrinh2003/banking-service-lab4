@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package intent_classify.v1;
+
+// IntentService is the gRPC contract between the backend (client) and the
+// intent-service (server). The backend sends a customer message and gets back
+// the predicted intent plus a confidence score and a short reason.
+service IntentService {
+    rpc IntentRecognizer (IntentRequest) returns (IntentResponse) {}
+}
+
+message IntentRequest {
+    string message = 1;   // raw customer message, e.g. "I can't log into my account"
+}
+
+message IntentResponse {
+    string intent = 1;        // predicted intent label, e.g. "account_blocked"
+    float confidence = 2;     // 0.0 - 1.0
+    string reason = 3;        // short human-readable justification (useful for the demo trace)
+}

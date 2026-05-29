@@ -1,0 +1,58 @@
+# Banking AI-Agent — runs intent-service (gRPC), backend (FastAPI), and frontend (Streamlit).
+# Set OLLAMA_BASE_URL in a .env file (use your Ollama / Pinggy URL).
+
+version: "3.9"
+
+services:
+  intent-service:
+    build:
+      context: ./intent_service
+      dockerfile: Dockerfile
+    container_name: intent-service
+    ports:
+      - "50051:50051"
+    environment:
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      INTENT_MODEL_NAME: gpt-oss:20b
+      GRPC_PORT: 50051
+    networks:
+      - internal_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: banking-backend
+    ports:
+      - "8000:8000"
+    environment:
+      # The backend reaches the intent-service by its service NAME on the network.
+      INTENT_SERVICE_HOST: intent-service
+      INTENT_SERVICE_PORT: 50051
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      RESPONSE_MODEL_NAME: gpt-oss:20b
+    depends_on:
+      - intent-service
+    networks:
+      - public_net
+      - internal_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: banking-frontend
+    ports:
+      - "8501:8501"
+    environment:
+      API_BASE_URL: http://backend:8000
+    depends_on:
+      - backend
+    networks:
+      - public_net
+
+networks:
+  public_net:
+    name: banking_public_net
+  internal_net:
+    name: banking_internal_net
